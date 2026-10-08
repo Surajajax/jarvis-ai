@@ -11,7 +11,7 @@ import soundfile as sf
 from openwakeword.model import Model
 from transformers import pipeline
 
-from brain.llm import ask_jarvis
+from brain.agent import jarvis_agent
 from tts.speech import speak
 
 
@@ -341,7 +341,7 @@ try:
                     "\n🧠 JARVIS THINKING..."
                 )
 
-                response = ask_jarvis(
+                response = jarvis_agent(
                     text
                 )
 

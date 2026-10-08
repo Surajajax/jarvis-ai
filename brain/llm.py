@@ -1,9 +1,7 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-
 MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
-
 
 print("🧠 Loading JARVIS brain...")
 
@@ -14,10 +12,7 @@ print(f"Device: {device}")
 if device == "cuda":
     print(f"GPU: {torch.cuda.get_device_name(0)}")
 
-
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_NAME
-)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
@@ -25,18 +20,20 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto"
 )
 
-
 print("✅ JARVIS brain loaded.")
 
 
 def ask_jarvis(user_text):
-
     messages = [
         {
             "role": "system",
             "content": (
                 "You are JARVIS, a helpful personal AI assistant. "
-                "Answer clearly and concisely."
+                "Answer in clear, natural English. "
+                "Be concise but complete. "
+                "Do not invent facts. "
+                "Do not switch languages. "
+                "When information is uncertain, say so."
             )
         },
         {
@@ -58,13 +55,18 @@ def ask_jarvis(user_text):
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=100
+        max_new_tokens=150,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9
     )
 
     generated_ids = [
         output_ids[len(input_ids):]
-        for input_ids, output_ids
-        in zip(inputs.input_ids, outputs)
+        for input_ids, output_ids in zip(
+            inputs.input_ids,
+            outputs
+        )
     ]
 
     response = tokenizer.batch_decode(
@@ -73,17 +75,3 @@ def ask_jarvis(user_text):
     )[0]
 
     return response.strip()
-
-
-if __name__ == "__main__":
-
-    print("\n================================")
-    print("🤖 JARVIS BRAIN TEST")
-    print("================================")
-
-    question = input("\nYou: ")
-
-    answer = ask_jarvis(question)
-
-    print("\nJARVIS:")
-    print(answer)

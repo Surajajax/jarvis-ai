@@ -13,56 +13,35 @@ if not API_KEY:
         "TAVILY_API_KEY not found in .env"
     )
 
+
 client = TavilyClient(
     api_key=API_KEY
 )
 
 
 def web_search(query):
-
     try:
 
         response = client.search(
             query=query,
             search_depth="basic",
-            max_results=5
+            max_results=3,
+            include_answer=True
         )
 
-        results = response.get(
-            "results",
-            []
-        )
+        answer = response.get("answer")
+
+        if answer:
+            return answer
+
+        results = response.get("results", [])
 
         if not results:
             return "No search results found."
 
-        formatted_results = []
-
-        for result in results:
-
-            title = result.get(
-                "title",
-                ""
-            )
-
-            content = result.get(
-                "content",
-                ""
-            )
-
-            url = result.get(
-                "url",
-                ""
-            )
-
-            formatted_results.append(
-                f"Title: {title}\n"
-                f"Content: {content}\n"
-                f"URL: {url}"
-            )
-
-        return "\n\n".join(
-            formatted_results
+        return results[0].get(
+            "content",
+            "No useful information found."
         )
 
     except Exception as e:
@@ -75,18 +54,10 @@ if __name__ == "__main__":
     print("🌐 Tavily Web Search Test")
     print("==========================")
 
-    query = input(
-        "\nSearch: "
-    )
+    query = input("\nSearch: ")
 
     result = web_search(query)
 
-    print(
-        "\n=========================="
-    )
-
+    print("\n==========================")
     print(result)
-
-    print(
-        "=========================="
-    )
+    print("==========================")

@@ -3,127 +3,159 @@ from tools.calculator import calculate
 from tools.web_search import web_search
 
 
-def jarvis_agent(user_text):
+# ============================================
+# CALCULATOR DETECTION
+# ============================================
 
-    text = user_text.lower().strip()
+def is_calculation(text):
+    text = text.lower().strip()
 
-    # ==============================
-    # CALCULATOR
-    # ==============================
-
-    calculator_words = [
-        "calculate",
-        "what is",
-        "how much is",
-        "plus",
-        "minus",
-        "multiply",
-        "divided by",
-        "times",
-        "percent",
-        "%",
+    math_symbols = [
+        "+",
+        "*",
+        "/",
+        "%"
     ]
 
-    has_math_symbol = any(
-        symbol in text
-        for symbol in ["+", "-", "*", "/", "%"]
-    )
+    math_words = [
+        "plus",
+        "minus",
+        "multiplied by",
+        "multiply by",
+        "times",
+        "divided by",
+    ]
 
-    has_calculator_word = any(
-        word in text
-        for word in calculator_words
-    )
+    if any(symbol in text for symbol in math_symbols):
+        return True
 
-    if has_math_symbol or has_calculator_word:
+    if any(word in text for word in math_words):
+        return True
 
-        # Try calculator only when the
-        # expression looks mathematical.
+    if text.startswith("calculate"):
+        return True
 
-        expression = (
-            text
-            .replace("calculate", "")
-            .replace("what is", "")
-            .replace("how much is", "")
-            .replace("plus", "+")
-            .replace("minus", "-")
-            .replace("multiply", "*")
-            .replace("times", "*")
-            .replace("divided by", "/")
-            .replace("percent", "%")
-        )
+    return False
 
-        try:
 
-            result = calculate(
-                expression.strip()
-            )
+# ============================================
+# PREPARE CALCULATION
+# ============================================
 
-            if "couldn't calculate" not in result.lower():
+def prepare_calculation(text):
+    text = text.lower().strip()
 
-                return (
-                    f"The answer is {result}."
-                )
+    replacements = {
+        "please calculate": "",
+        "calculate": "",
+        "what is": "",
+        "how much is": "",
 
-        except Exception:
-            pass
+        "multiplied by": "*",
+        "multiply by": "*",
+        "times": "*",
 
-    # ==============================
-    # WEB SEARCH
-    # ==============================
+        "divided by": "/",
 
-    web_words = [
-        "who is",
-        "who was",
-        "what happened",
+        "plus": "+",
+        "minus": "-",
+    }
+
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    return text.strip()
+
+
+# ============================================
+# WEB SEARCH DETECTION
+# ============================================
+
+def needs_web_search(text):
+    text = text.lower().strip()
+
+    web_keywords = [
         "latest",
         "today",
         "current",
         "recent",
         "news",
+        "who is",
+        "who was",
+        "what happened",
         "when is",
         "where is",
         "how many",
+        "how much does",
         "score",
         "price",
         "stock",
-        "weather",
+        "trending",
     ]
 
-    needs_web_search = any(
-        word in text
-        for word in web_words
+    return any(
+        keyword in text
+        for keyword in web_keywords
     )
 
-    if needs_web_search:
 
-        search_results = web_search(
-            user_text
-        )
+# ============================================
+# WEB SEARCH ANSWER
+# ============================================
 
-        prompt = f"""
-You are JARVIS.
+def answer_from_web(user_text):
+    print("\n🌐 Searching the web...")
 
-Answer the user's question using
-the web search results below.
+    search_results = web_search(user_text)
 
-User question:
-{user_text}
+    if search_results.startswith("Web search error"):
+        return search_results
 
-Web search results:
-{search_results}
+    return search_results
 
-Give a concise and accurate answer.
-Do not mention that you are reading search results.
-"""
 
-        return ask_jarvis(prompt)
+# ============================================
+# MAIN JARVIS AGENT
+# ============================================
 
-    # ==============================
-    # NORMAL LLM
-    # ==============================
+def jarvis_agent(user_text):
+
+    user_text = user_text.strip()
+
+    if not user_text:
+        return "I didn't hear anything."
+
+    # ========================================
+    # 1. CALCULATOR
+    # ========================================
+
+    if is_calculation(user_text):
+
+        expression = prepare_calculation(user_text)
+
+        result = calculate(expression)
+
+        if "couldn't calculate" not in result.lower():
+            return f"The answer is {result}."
+
+    # ========================================
+    # 2. WEB SEARCH
+    # ========================================
+
+    if needs_web_search(user_text):
+
+        return answer_from_web(user_text)
+
+    # ========================================
+    # 3. LOCAL QWEN LLM
+    # ========================================
 
     return ask_jarvis(user_text)
 
+
+# ============================================
+# AGENT TEST
+# ============================================
 
 if __name__ == "__main__":
 
@@ -132,21 +164,31 @@ if __name__ == "__main__":
 
     while True:
 
-        user_text = input(
-            "\nYou: "
-        )
+        try:
 
-        if user_text.lower() in [
-            "exit",
-            "quit",
-        ]:
+            user_text = input("\nYou: ").strip()
 
+            # Exit commands
+            if user_text.lower() in [
+                "exit",
+                "quit",
+                "stop"
+            ]:
+
+                print("\n🛑 Agent stopped.")
+                break
+
+            # Run agent
+            response = jarvis_agent(user_text)
+
+            # Display response
+            print(f"\n🤖 JARVIS: {response}")
+
+        except KeyboardInterrupt:
+
+            print("\n\n🛑 Agent stopped.")
             break
 
-        response = jarvis_agent(
-            user_text
-        )
+        except Exception as e:
 
-        print(
-            f"\nJARVIS: {response}"
-        )
+            print(f"\n❌ Error: {e}")
