@@ -1,0 +1,24 @@
+# virtual environments
+.venv/
+venv/
+env/
+
+# python
+__pycache__/
+*.pyc
+
+# secrets
+.env
+*.key
+
+# models, audio, data (too big for GitHub)
+*.bin
+*.onnx
+*.safetensors
+*.pt
+*.pth
+*.gguf
+models/
+data/
+*.wav
+*.mp3
